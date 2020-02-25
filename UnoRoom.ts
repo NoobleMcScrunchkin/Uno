@@ -86,9 +86,17 @@ export class State extends Schema {
     @type("string")
     turn = "";
     @type("boolean")
-    waitingForChange = false
+    waitingForChange = false;
+    @type("boolean")
+    waitingForSwap = false;
     @type({ map: Players })
     players = new MapSchema<Players>();
+    @type("boolean")
+    jumpIn = false;
+    @type("boolean")
+    sevenZero = false;
+    @type("boolean")
+    stacking = false;
 }
 
 export class UnoRoom extends Room {
@@ -101,18 +109,16 @@ export class UnoRoom extends Room {
     block : any = undefined;
     toBe : number = 0;
     cardsToPick : number = 0;
-    stacking : boolean = true;
     stackPlayed : number = 0;
-    jumpIn : boolean = true;
 
     onCreate (options: any) {
         this.setState(new State(this));
-        console.log("UnoRoom created: " + this.roomId);
+        // console.log("UnoRoom created: " + this.roomId);
     }
 
     onJoin (client: Client, options: any) {
         if (!this.started) {
-            console.log("Player joined: " + client.id);
+            // console.log("Player joined: " + client.id);
             if (this.state.host == "") {
                 this.state.host = client.id;
             }
@@ -144,27 +150,27 @@ export class UnoRoom extends Room {
                         this.state.players[player].cards = 7;
                         this.send(this.players[player].client, { cards: this.playerCards[player] });
                     }
-                    console.log(this.playerCards);
+                    // console.log(this.playerCards);
                     this.state.turn = this.state.host;
-                    console.log("Game started");
+                    // console.log("Game started");
                 } else {
-                    console.log("Not enough players");
+                    // console.log("Not enough players");
                 }
             } else if (message.text != undefined) {
-                console.log(message.text);
+                // console.log(message.text);
             } else if (message.transfer != undefined ) {
                 if (client.id == this.state.host) {
                     if (this.players[message.transfer] != undefined) {
-                        console.log("Host transfered to", message.transfer);
+                        // console.log("Host transfered to", message.transfer);
                         this.state.host = message.transfer;
                     } else {
-                        console.log("Transfer failed, player doesn't exist");
+                        // console.log("Transfer failed, player doesn't exist");
                     }
                 } else {
-                    console.log("Non host tried to transfer");
+                    // console.log("Non host tried to transfer");
                 }
-            } else if (message.playTurn != undefined && this.started && message.playTurn.colour != undefined && message.playTurn.number != undefined && !this.state.waitingForChange) {
-                if ((this.jumpIn && message.playTurn.number == this.state.currentCardNumber && message.playTurn.colour == this.state.currentCardColour || client.id == this.state.turn) && this.started) {
+            } else if (message.playTurn != undefined && this.started && message.playTurn.colour != undefined && message.playTurn.number != undefined && !this.state.waitingForChange && !this.state.waitingForSwap) {
+                if ((this.state.jumpIn && message.playTurn.number == this.state.currentCardNumber && message.playTurn.colour == this.state.currentCardColour || client.id == this.state.turn) && this.started) {
                     this.state.turn = client.id;
                     if ((message.playTurn.colour == "r" || message.playTurn.colour == "g" || message.playTurn.colour == "b" || message.playTurn.colour == "y") && message.playTurn.number > -1 && message.playTurn.number < 15) {
                         let valid = false;
@@ -186,111 +192,144 @@ export class UnoRoom extends Room {
                                 } else {
                                     this.toBe = message.playTurn.number;
                                 }
-                                console.log(this.state.turn, "played", message.playTurn.colour, message.playTurn.number);
+                                // console.log(this.state.turn, "played", message.playTurn.colour, message.playTurn.number);
                                 if (this.state.players[client.id].cards == 0) {
                                     this.started = false;
                                     this.state.turn = "";
                                     for (let player in this.players) {
                                         this.state.players[player].cards = 7;
                                     }
-                                    console.log(client.id, "won")
+                                    // console.log(client.id, "won")
                                     this.broadcast({winner: client.id})
                                 } else {
-                                    if (message.playTurn.number > 9) {
-                                        switch (message.playTurn.number) {
-                                            case 10:
-                                                console.log("Blocked");
-                                                this.nextTurn(1, 0);
-                                                break;
-                                            case 11:
-                                                console.log("Reversed");
-                                                if (this.clockwise) {
-                                                    this.clockwise = false;
-                                                } else {
-                                                    this.clockwise = true;
-                                                }
+                                    switch (message.playTurn.number) {
+                                        case 0:
+                                            if (this.state.sevenZero) {
+                                                this.zeroSwap();
+                                            }
+                                            this.nextTurn(0, 0);
+                                            break;
+                                        case 7:
+                                            if (this.state.sevenZero) {
+                                                this.state.waitingForSwap = "true";
+                                            }
+                                            else {
                                                 this.nextTurn(0, 0);
-                                                break;
-                                            case 12:
-                                                console.log("+2");
-                                                if (this.stacking) {
-                                                    this.cardsToPick += 2;
-                                                    this.stackPlayed = 12;
-                                                    this.nextTurn(0, 0);
-                                                } else {
-                                                    this.nextTurn(1, 2);
-                                                }
-                                                break;
-                                            case 13:
-                                                console.log("changeColour");
-                                                this.state.waitingForChange = true;
-                                                this.block = 0;
-                                                this.pickup = 0;
-                                                break;
-                                            case 14:
-                                                console.log("+4");
-                                                this.state.waitingForChange = true;
-                                                if (this.stacking) {
-                                                    this.cardsToPick += 4;
-                                                    this.stackPlayed = 14;
-                                                } else {
-                                                    this.block = 1;
-                                                    this.pickup = 4;
-                                                }
-                                                break;
-                                        }
-                                    } else {
-                                        this.nextTurn(0, 0);
+                                            }
+                                            break;
+                                        case 10:
+                                            // console.log("Blocked");
+                                            this.nextTurn(1, 0);
+                                            break;
+                                        case 11:
+                                            // console.log("Reversed");
+                                            if (this.clockwise) {
+                                                this.clockwise = false;
+                                            } else {
+                                                this.clockwise = true;
+                                            }
+                                            this.nextTurn(0, 0);
+                                            break;
+                                        case 12:
+                                            // console.log("+2");
+                                            if (this.state.stacking) {
+                                                this.cardsToPick += 2;
+                                                this.stackPlayed = 12;
+                                                this.nextTurn(0, 0);
+                                            } else {
+                                                this.nextTurn(1, 2);
+                                            }
+                                            break;
+                                        case 13:
+                                            // console.log("changeColour");
+                                            this.state.waitingForChange = true;
+                                            this.block = 0;
+                                            this.pickup = 0;
+                                            break;
+                                        case 14:
+                                            // console.log("+4");
+                                            this.state.waitingForChange = true;
+                                            if (this.state.stacking) {
+                                                this.cardsToPick += 4;
+                                                this.stackPlayed = 14;
+                                            } else {
+                                                this.block = 1;
+                                                this.pickup = 4;
+                                            }
+                                            break;
+                                        default:
+                                            this.nextTurn(0, 0);
+                                            break;
                                     }
                                 }
                             } else {
-                                console.log("Player cannot play that card");
+                                // console.log("Player cannot play that card");
                             }
                         } else {
-                            console.log("Player does not have the card they tried to play");
+                            // console.log("Player does not have the card they tried to play");
                         }
                     } else {
-                        console.log("Invalid turn played");
+                        // console.log("Invalid turn played");
                     }
                 } else {
-                    console.log("Player tried to play when it wasn't their turn");
+                    // console.log("Player tried to play when it wasn't their turn");
                 }
-            } else if (message.pickColour != undefined && this.started && this.state.waitingForChange && this.state.turn == client.id) {
+            } else if (message.pickColour != undefined && this.started && this.state.waitingForChange && this.state.turn == client.id && !this.state.waitingForSwap) {
                 if (message.pickColour == "r" || message.pickColour == "g" || message.pickColour == "b" || message.pickColour == "y") {
                     this.state.waitingForChange = false;
                     this.state.currentCardColour = message.pickColour;
                     this.state.currentCardNumber = this.toBe;
-                    console.log("Colour changed to", this.state.currentCardColour);
-                    if (this.stacking) {
+                    // console.log("Colour changed to", this.state.currentCardColour);
+                    if (this.state.stacking) {
                         this.nextTurn(0, 0);
                     } else {
                         this.nextTurn(this.block, this.pickup);
                     }
                 }
-            } else if (message.pickup != undefined && message.pickup == true && !this.state.waitingForChange && this.started) {
+            } else if (message.pickup != undefined && message.pickup == true && !this.state.waitingForChange && this.started && !this.state.waitingForSwap) {
                 if (this.state.turn == client.id) {
-                    if (this.cardsToPick != 0 && this.stacking) {
-                        console.log(client.id, "picked up ", this.cardsToPick);
+                    if (this.cardsToPick != 0 && this.state.stacking) {
+                        // console.log(client.id, "picked up ", this.cardsToPick);
                         for (let i = 0; i < this.cardsToPick; i++) {
                             this.addCard(client.id);
                         }
                         this.cardsToPick = 0;
                     } else {
-                        console.log(client.id, "picked up");
+                        // console.log(client.id, "picked up");
                         this.addCard(client.id);
                     }
                     this.nextTurn(0, 0);
                 } else {
-                    console.log("Player tried to play when it wasn't their turn");
+                    // console.log("Player tried to play when it wasn't their turn");
                 }
+            } else if (message.pickSwap != undefined && this.state.waitingForSwap && client.id == this.state.turn && this.started && !this.state.waitingForChange && this.state.sevenZero) {
+                if (this.players[message.pickSwap] != undefined) {
+                    let temp = this.playerCards[client.id];
+                    let tempC = this.state.players[client.id].cards;
+                    this.playerCards[client.id] = this.playerCards[message.pickSwap];
+                    this.state.players[client.id].cards = this.state.players[message.pickSwap].cards;
+                    this.playerCards[message.pickSwap] = temp;
+                    this.state.players[message.pickSwap].cards = tempC;
+                    this.state.waitingForSwap = false;
+                    this.nextTurn(0, 0);
+                }
+            } else if (message.stacking != undefined && (message.stacking == true || message.stacking == false) && client.id == this.state.host && !this.started) {
+                this.state.stacking = message.stacking;
+                // console.log(1);
+            } else if (message.sevenZero != undefined && (message.sevenZero == true || message.sevenZero == false) && client.id == this.state.host && !this.started) {
+                this.state.sevenZero = message.sevenZero;
+                // console.log(1);
+            } else if (message.jumpIn != undefined && (message.jumpIn == true || message.jumpIn == false) && client.id == this.state.host && !this.started) {
+                this.state.jumpIn = message.jumpIn;
+                // console.log(1);
             } else {
-                console.log(message);
+                // console.log(message);
             }
         }
     }
 
     onLeave (client: Client, consented: boolean) {
-        console.log("Player left: " + client.id);
+        // console.log("Player left: " + client.id);
         delete this.players[client.id];
         delete this.state.players[client.id];
 
@@ -301,7 +340,7 @@ export class UnoRoom extends Room {
         try {
             if (client.id == this.state.host) {
                 this.state.host = this.players[Object.keys(this.players)[0]].client.id;
-                console.log("Host left, new host is", this.state.host);
+                // console.log("Host left, new host is", this.state.host);
             }
         } catch {}
 
@@ -315,13 +354,36 @@ export class UnoRoom extends Room {
     }
 
     onDispose() {
-        console.log("Room Destroyed");
+        // console.log("Room Destroyed");
+    }
+
+    zeroSwap() {
+        if (!this.clockwise) {
+            let temp = this.playerCards[Object.keys(this.players)[0]];
+            let tempC = this.state.players[Object.keys(this.players)[0]].cards;
+            for (let i = 0; i < Object.keys(this.players).length - 1; i++) {
+                this.playerCards[Object.keys(this.players)[i]] = this.playerCards[Object.keys(this.players)[i + 1]];
+                this.state.players[Object.keys(this.players)[i]].cards = this.state.players[Object.keys(this.players)[i + 1]].cards;
+            }
+            this.playerCards[Object.keys(this.players)[Object.keys(this.players).length - 1]] = temp;
+            this.state.players[Object.keys(this.players)[Object.keys(this.players).length - 1]].cards = tempC;
+        } else {
+            let temp = this.playerCards[Object.keys(this.players)[Object.keys(this.players).length - 1]];
+            let tempC = this.state.players[Object.keys(this.players)[Object.keys(this.players).length - 1]].cards;
+            for (let i = Object.keys(this.players).length - 1; i > 0; i--) {
+                this.playerCards[Object.keys(this.players)[i]] = this.playerCards[Object.keys(this.players)[i - 1]];
+                this.state.players[Object.keys(this.players)[i]].cards = this.state.players[Object.keys(this.players)[i - 1]].cards;
+            }
+            this.playerCards[Object.keys(this.players)[0]] = temp;
+            this.state.players[Object.keys(this.players)[0]].cards = tempC;
+        }
     }
 
     addCard(player: string) {
         this.state.players[player].cards++;
-        this.playerCards[player].push({colour: getColour(), number: getNumber(true)});
-        console.log("cardPicked", player);
+        // this.playerCards[player].push({colour: getColour(), number: getNumber(true)});
+        this.playerCards[player].push({colour: getColour(), number: 7});
+        // console.log("cardPicked", player);
     }
 
     nextTurn(block: any, pickup: any) {
@@ -370,9 +432,9 @@ export class UnoRoom extends Room {
             for (let player in this.players) {
                 this.send(this.players[player].client, { cards: this.playerCards[player] });
             }
-            console.log("Current turn is", this.state.turn);
+            // console.log("Current turn is", this.state.turn);
         } else {
-            console.log("playerId undefined");
+            // console.log("playerId undefined");
         }
     }
 }

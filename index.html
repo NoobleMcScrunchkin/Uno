@@ -46,12 +46,13 @@
                 <img id="currentCard" class="bigCard" src="cards/card.png">
                 <img id="pickupCard" class="bigCard" onclick="pickup()" src="cards/card.png">
                 <br>
-                <div id="colours" style="position: relative; width: 20%; height: 20%; border: white 8px solid; border-radius: 8px; display: inline-block;;">
+                <div id="colours" style="position: relative; width: 20%; height: 20%; border: white 8px solid; border-radius: 8px; display: none;">
                     <div onclick="pickColour('r')" style="background: rgb(234,50,60); width: 50%; height: 50%; float: left;"></div>
                     <div onclick="pickColour('b')" style="background: rgb(0,152,220); width: 50%; height: 50%; float: left;"></div>
                     <div onclick="pickColour('y')" style="background: rgb(255,200,37); width: 50%; height: 50%; float: left;"></div>
                     <div onclick="pickColour('g')" style="background: rgb(51,152,75); width: 50%; height: 50%; float: left;"></div>
                 </div>
+                <div id="swap" style="background: black; position: relative; width: 20%; height: 20%; border: white 8px solid; border-radius: 8px; display: none;"></div>
                 <div class="cards"></div>
             </div>
         </div>

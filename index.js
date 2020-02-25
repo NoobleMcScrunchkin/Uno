@@ -3,6 +3,8 @@ var room = undefined;
 var myCards = [];
 var winner = undefined;
 
+document.addEventListener("keydown", (e) => {if (e.keyCode === 13) {e.preventDefault(); join();}})
+
 $(window, document, undefined).ready(function() {
     $('input').blur(function() {
         var $this = $(this);
@@ -63,8 +65,7 @@ function joinRoom(name, id) {
 }
 
 function runGame(roomP) {
-    room = roomP
-    console.log("joined successfully", room.sessionId, room.id);
+    room = roomP;
 
     document.getElementsByTagName("body")[0].className = "game";
     document.getElementById("entry").hidden = true;
@@ -74,12 +75,8 @@ function runGame(roomP) {
         if (message.cards != undefined) {
             myCards = message.cards;
             winner = undefined;
-            console.log(myCards);
         } else if (message.winner != undefined) {
             winner = message.winner;
-            console.log(message.winner, "won")
-        } else {
-            console.log(message);
         }
     });
 
@@ -87,6 +84,7 @@ function runGame(roomP) {
 }
 
 function draw() {
+    $("#swap").empty();
     $("#players").empty();
     dom = document.createElement("span");
     dom.textContent = "Room ID: ";
@@ -96,7 +94,83 @@ function draw() {
     indom.textContent = room.id;
     dom.appendChild(indom);
     document.getElementById("players").appendChild(document.createElement("br"));
+
+    l1 = document.createElement("label");
+    l1.className = "container";
+    l1.textContent = "Stacking"
+    document.getElementById("players").appendChild(l1);
+
+    l2 = document.createElement("input");
+    l2.type = "checkbox";
+    if (room.state.stacking) {
+        l2.checked = "checked";
+    }
+    if (room.state.host != room.sessionId || room.state.turn != "") {
+        l2.disabled = true;
+    } else {
+        l2.setAttribute("onclick", "if (this.checked) { room.send({stacking: true}) } else { room.send({stacking: false}); }");
+    }
+    l1.appendChild(l2);
+
+    l3 = document.createElement("span");
+    l3.className = "checkmark";
+    l1.appendChild(l3)
+
+    l1 = document.createElement("label");
+    l1.className = "container";
+    l1.textContent = "7-0"
+    document.getElementById("players").appendChild(l1);
+
+    l2 = document.createElement("input");
+    l2.type = "checkbox";
+    if (room.state.sevenZero) {
+        l2.checked = "checked";
+    }
+    if (room.state.host != room.sessionId || room.state.turn != "") {
+            l2.disabled = true;
+        } else {
+        l2.setAttribute("onclick", "if (this.checked) { room.send({sevenZero: true}) } else { room.send({sevenZero: false}); }");
+    }
+    l1.appendChild(l2);
+
+    l3 = document.createElement("span");
+    l3.className = "checkmark";
+    l1.appendChild(l3)
+
+    l1 = document.createElement("label");
+    l1.className = "container";
+    l1.textContent = "Jump In"
+    document.getElementById("players").appendChild(l1);
+
+    l2 = document.createElement("input");
+    l2.type = "checkbox";
+    if (room.state.jumpIn) {
+        l2.checked = "checked";
+    }
+    if (room.state.host != room.sessionId || room.state.turn != "") {
+        l2.disabled = true;
+    } else {
+        l2.setAttribute("onclick", "if (this.checked) { room.send({jumpIn: true}) } else { room.send({jumpIn: false}); }");
+    }
+    l1.appendChild(l2);
+
+    l3 = document.createElement("span");
+    l3.className = "checkmark";
+    l1.appendChild(l3)
+
     for (let player in room.state.players) {
+        dom = document.createElement("span");
+        dom.textContent = room.state.players[player].name;
+        dom.setAttribute("onclick","pickSwap('" + player + "')");
+        dom.className = "tooltip"
+        dom.style.borderBottom = "1px white solid";
+        dom.style.width = "100%";
+        document.getElementById("swap").appendChild(dom);
+        tip = document.createElement("span");
+        tip.className = "tooltiptext";
+        tip.textContent = "Click to swap";
+        dom.appendChild(tip);
+        document.getElementById("swap").appendChild(document.createElement("br"));
         div = document.createElement("div");
         div.className = "tooltip"
         document.getElementById("players").appendChild(div);
@@ -164,6 +238,11 @@ function draw() {
     } else {
         document.getElementById("colours").style.display = "none";
     }
+    if (room.state.turn == room.sessionId && room.state.waitingForSwap && !room.state.waitingForChange) {
+        document.getElementById("swap").style.display = "inline-block";
+    } else {
+        document.getElementById("swap").style.display = "none";
+    }
 }
 
 function message() {
@@ -189,4 +268,8 @@ function playCard(colour, number) {
 
 function pickColour(colour) {
     room.send({pickColour: colour});
+}
+
+function pickSwap(player) {
+    room.send({pickSwap : player});
 }
