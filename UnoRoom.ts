@@ -381,8 +381,8 @@ export class UnoRoom extends Room {
 
     addCard(player: string) {
         this.state.players[player].cards++;
-        // this.playerCards[player].push({colour: getColour(), number: getNumber(true)});
-        this.playerCards[player].push({colour: getColour(), number: 7});
+        this.playerCards[player].push({colour: getColour(), number: getNumber(true)});
+        // this.playerCards[player].push({colour: getColour(), number: 7});
         // console.log("cardPicked", player);
     }
 
