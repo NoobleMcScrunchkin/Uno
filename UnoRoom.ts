@@ -17,6 +17,11 @@ import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 12: + 2
 13: changeColour
 14: + 4
+
+TODO
+Stacking - Done!
+7-0
+Jump in - Done!
 */
 
 function randomIntFromInterval(min : number, max : number) {
@@ -95,6 +100,10 @@ export class UnoRoom extends Room {
     pickup : any = undefined;
     block : any = undefined;
     toBe : number = 0;
+    cardsToPick : number = 0;
+    stacking : boolean = true;
+    stackPlayed : number = 0;
+    jumpIn : boolean = true;
 
     onCreate (options: any) {
         this.setState(new State(this));
@@ -155,7 +164,8 @@ export class UnoRoom extends Room {
                     console.log("Non host tried to transfer");
                 }
             } else if (message.playTurn != undefined && this.started && message.playTurn.colour != undefined && message.playTurn.number != undefined && !this.state.waitingForChange) {
-                if (client.id == this.state.turn && this.started) {
+                if ((this.jumpIn && message.playTurn.number == this.state.currentCardNumber && message.playTurn.colour == this.state.currentCardColour || client.id == this.state.turn) && this.started) {
+                    this.state.turn = client.id;
                     if ((message.playTurn.colour == "r" || message.playTurn.colour == "g" || message.playTurn.colour == "b" || message.playTurn.colour == "y") && message.playTurn.number > -1 && message.playTurn.number < 15) {
                         let valid = false;
                         let index = undefined;
@@ -167,7 +177,7 @@ export class UnoRoom extends Room {
                             }
                         }
                         if (valid) {
-                            if (message.playTurn.number > 12 || this.state.currentCardColour == message.playTurn.colour || this.state.currentCardNumber == message.playTurn.number) {
+                            if ((this.cardsToPick == 0 && (message.playTurn.number > 12 || this.state.currentCardColour == message.playTurn.colour || this.state.currentCardNumber == message.playTurn.number)) || (this.cardsToPick > 0 && message.playTurn.number == this.stackPlayed)) {
                                 this.state.players[client.id].cards--;
                                 this.playerCards[client.id].splice(index, 1);
                                 if (message.playTurn.number < 13) {
@@ -203,7 +213,13 @@ export class UnoRoom extends Room {
                                                 break;
                                             case 12:
                                                 console.log("+2");
-                                                this.nextTurn(1, 2);
+                                                if (this.stacking) {
+                                                    this.cardsToPick += 2;
+                                                    this.stackPlayed = 12;
+                                                    this.nextTurn(0, 0);
+                                                } else {
+                                                    this.nextTurn(1, 2);
+                                                }
                                                 break;
                                             case 13:
                                                 console.log("changeColour");
@@ -214,8 +230,13 @@ export class UnoRoom extends Room {
                                             case 14:
                                                 console.log("+4");
                                                 this.state.waitingForChange = true;
-                                                this.block = 1;
-                                                this.pickup = 4;
+                                                if (this.stacking) {
+                                                    this.cardsToPick += 4;
+                                                    this.stackPlayed = 14;
+                                                } else {
+                                                    this.block = 1;
+                                                    this.pickup = 4;
+                                                }
                                                 break;
                                         }
                                     } else {
@@ -240,12 +261,24 @@ export class UnoRoom extends Room {
                     this.state.currentCardColour = message.pickColour;
                     this.state.currentCardNumber = this.toBe;
                     console.log("Colour changed to", this.state.currentCardColour);
-                    this.nextTurn(this.block, this.pickup);
+                    if (this.stacking) {
+                        this.nextTurn(0, 0);
+                    } else {
+                        this.nextTurn(this.block, this.pickup);
+                    }
                 }
             } else if (message.pickup != undefined && message.pickup == true && !this.state.waitingForChange && this.started) {
                 if (this.state.turn == client.id) {
-                    console.log(client.id, "picked up");
-                    this.addCard(client.id);
+                    if (this.cardsToPick != 0 && this.stacking) {
+                        console.log(client.id, "picked up ", this.cardsToPick);
+                        for (let i = 0; i < this.cardsToPick; i++) {
+                            this.addCard(client.id);
+                        }
+                        this.cardsToPick = 0;
+                    } else {
+                        console.log(client.id, "picked up");
+                        this.addCard(client.id);
+                    }
                     this.nextTurn(0, 0);
                 } else {
                     console.log("Player tried to play when it wasn't their turn");
