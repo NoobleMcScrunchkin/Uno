@@ -35,7 +35,8 @@ window.onload = function() {
     Particles.init({
         selector: '.background',
         color: "#ffffff",
-        connectParticles: true
+        connectParticles: true,
+        speed: 0.5
     });
 }
 
@@ -112,16 +113,16 @@ function sort(cardsUnsort) {
         if (cards[i].number < 13) {
             switch (cards[i].colour) {
                 case "r":
-                    red.push(cards[i])
+                    red.push(cards[i]);
                     break;
                 case "b":
-                    blue.push(cards[i])
+                    blue.push(cards[i]);
                     break;
                 case "y":
-                    yellow.push(cards[i])
+                    yellow.push(cards[i]);
                     break;
                 case "g":
-                    green.push(cards[i])
+                    green.push(cards[i]);
                     break;
             }
         } else {
