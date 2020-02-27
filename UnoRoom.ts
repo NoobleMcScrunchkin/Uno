@@ -140,6 +140,12 @@ export class UnoRoom extends Room {
             if (message.start != undefined && !this.started && client.id == this.state.host) {
                 if (Object.keys(this.players).length > 1) {
                     this.started = true;
+                    this.clockwise = true;
+                    this.pickup = undefined;
+                    this.block = undefined;
+                    this.toBe = 0;
+                    this.cardsToPick = 0;
+                    this.stackPlayed = 0;
                     this.state.currentCardColour =  getColour();
                     this.state.currentCardNumber =  getNumber(false);
                     for (let player in this.players) {
@@ -303,7 +309,7 @@ export class UnoRoom extends Room {
                     // console.log("Player tried to play when it wasn't their turn");
                 }
             } else if (message.pickSwap != undefined && this.state.waitingForSwap && client.id == this.state.turn && this.started && !this.state.waitingForChange && this.state.sevenZero) {
-                if (this.players[message.pickSwap] != undefined) {
+                if (this.players[message.pickSwap] != undefined && message.pickSwap != client.id) {
                     let temp = this.playerCards[client.id];
                     let tempC = this.state.players[client.id].cards;
                     this.playerCards[client.id] = this.playerCards[message.pickSwap];

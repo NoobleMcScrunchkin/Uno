@@ -73,7 +73,7 @@ function runGame(roomP) {
 
     room.onMessage((message) => {
         if (message.cards != undefined) {
-            myCards = message.cards;
+            myCards = sort(message.cards);
             winner = undefined;
         } else if (message.winner != undefined) {
             winner = message.winner;
@@ -81,6 +81,54 @@ function runGame(roomP) {
     });
 
     room.onStateChange((state) => draw());
+}
+
+function bubbleSort(arr) {
+    let sorting = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+        if (arr[i].number > arr[i + 1].number) {
+            let temp = arr[i];
+            arr[i] = arr[i + 1];
+            arr[i + 1] = temp;
+            sorting = true;
+        }
+    }
+    if (sorting) {
+        bubbleSort(arr);
+    }
+    return arr;
+}
+
+// r, b, y, g
+
+function sort(cardsUnsort) {
+    let cards = bubbleSort(cardsUnsort);
+    let red = [];
+    let blue = [];
+    let yellow = [];
+    let green = [];
+    let wild = [];
+    for (let i = 0; i < cards.length; i++) {
+        if (cards[i].number < 13) {
+            switch (cards[i].colour) {
+                case "r":
+                    red.push(cards[i])
+                    break;
+                case "b":
+                    blue.push(cards[i])
+                    break;
+                case "y":
+                    yellow.push(cards[i])
+                    break;
+                case "g":
+                    green.push(cards[i])
+                    break;
+            }
+        } else {
+            wild.push(cards[i]);
+        }
+    }
+    return red.concat(blue).concat(yellow).concat(green).concat(wild);
 }
 
 function draw() {
@@ -159,17 +207,19 @@ function draw() {
     l1.appendChild(l3)
 
     for (let player in room.state.players) {
-        dom = document.createElement("span");
-        dom.textContent = room.state.players[player].name;
-        dom.setAttribute("onclick","pickSwap('" + player + "')");
-        dom.className = "tooltip"
-        dom.style.borderBottom = "1px white solid";
-        dom.style.width = "100%";
-        document.getElementById("swap").appendChild(dom);
-        tip = document.createElement("span");
-        tip.className = "tooltiptext";
-        tip.textContent = "Click to swap";
-        dom.appendChild(tip);
+        if (player != room.sessionId) {
+            dom = document.createElement("span");
+            dom.textContent = room.state.players[player].name;
+            dom.setAttribute("onclick","pickSwap('" + player + "')");
+            dom.className = "tooltip"
+            dom.style.borderBottom = "1px white solid";
+            dom.style.width = "100%";
+            document.getElementById("swap").appendChild(dom);
+            tip = document.createElement("span");
+            tip.className = "tooltiptext";
+            tip.textContent = "Click to swap";
+            dom.appendChild(tip);
+        }
         document.getElementById("swap").appendChild(document.createElement("br"));
         div = document.createElement("div");
         div.className = "tooltip"
