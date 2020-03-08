@@ -140,6 +140,13 @@ export class UnoRoom extends Room {
             if (message.start != undefined && !this.started && client.id == this.state.host) {
                 if (Object.keys(this.players).length > 1) {
                     this.started = true;
+                    this.stackPlayed = 0;
+                    this.clockwise = true;
+                    this.pickup = undefined;
+                    this.block = undefined;
+                    this.toBe = 0;
+                    this.stackPlayed = 0;
+                    this.cardsToPick = 0;
                     this.state.currentCardColour =  getColour();
                     this.state.currentCardNumber =  getNumber(false);
                     for (let player in this.players) {
@@ -170,7 +177,7 @@ export class UnoRoom extends Room {
                     // console.log("Non host tried to transfer");
                 }
             } else if (message.playTurn != undefined && this.started && message.playTurn.colour != undefined && message.playTurn.number != undefined && !this.state.waitingForChange && !this.state.waitingForSwap) {
-                if ((this.state.jumpIn && message.playTurn.number == this.state.currentCardNumber && message.playTurn.colour == this.state.currentCardColour || client.id == this.state.turn) && this.started) {
+                if (((this.state.jumpIn && (message.playTurn.number == this.state.currentCardNumber && message.playTurn.colour == this.state.currentCardColour || (this.state.currentCardNumber > 12 && this.state.currentCardNumber == message.playTurn.number))) || client.id == this.state.turn) && this.started) {
                     this.state.turn = client.id;
                     if ((message.playTurn.colour == "r" || message.playTurn.colour == "g" || message.playTurn.colour == "b" || message.playTurn.colour == "y") && message.playTurn.number > -1 && message.playTurn.number < 15) {
                         let valid = false;
@@ -303,7 +310,7 @@ export class UnoRoom extends Room {
                     // console.log("Player tried to play when it wasn't their turn");
                 }
             } else if (message.pickSwap != undefined && this.state.waitingForSwap && client.id == this.state.turn && this.started && !this.state.waitingForChange && this.state.sevenZero) {
-                if (this.players[message.pickSwap] != undefined) {
+                if (this.players[message.pickSwap] != undefined && message.pickSwap != client.id) {
                     let temp = this.playerCards[client.id];
                     let tempC = this.state.players[client.id].cards;
                     this.playerCards[client.id] = this.playerCards[message.pickSwap];
@@ -330,12 +337,12 @@ export class UnoRoom extends Room {
 
     onLeave (client: Client, consented: boolean) {
         // console.log("Player left: " + client.id);
-        delete this.players[client.id];
-        delete this.state.players[client.id];
-
         if (client.id == this.state.turn) {
             this.nextTurn(0, 0);
         }
+
+        delete this.players[client.id];
+        delete this.state.players[client.id];
 
         try {
             if (client.id == this.state.host) {

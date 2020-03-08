@@ -159,13 +159,15 @@ function draw() {
     l1.appendChild(l3)
 
     for (let player in room.state.players) {
-        dom = document.createElement("span");
-        dom.textContent = room.state.players[player].name;
-        dom.setAttribute("onclick","pickSwap('" + player + "')");
-        dom.className = "tooltip"
-        dom.style.borderBottom = "1px white solid";
-        dom.style.width = "100%";
-        document.getElementById("swap").appendChild(dom);
+        if (player != room.sessionId) {
+            dom = document.createElement("span");
+            dom.textContent = room.state.players[player].name;
+            dom.setAttribute("onclick","pickSwap('" + player + "')");
+            dom.className = "tooltip"
+            dom.style.borderBottom = "1px white solid";
+            dom.style.width = "100%";
+            document.getElementById("swap").appendChild(dom);
+        }
         tip = document.createElement("span");
         tip.className = "tooltiptext";
         tip.textContent = "Click to swap";
