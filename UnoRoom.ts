@@ -74,6 +74,8 @@ export class Players extends Schema {
     name = "";
     @type("number")
     cards = 7;
+    @type("boolean")
+    uno = false;
 }
 
 export class State extends Schema {
@@ -97,6 +99,14 @@ export class State extends Schema {
     sevenZero = false;
     @type("boolean")
     stacking = false;
+    @type("boolean")
+    contestable = false;
+    @type("string")
+    calledUno = "";
+    @type("number")
+    cardsToPick = 0;
+    @type("number")
+    stackPlayed = 0;
 }
 
 export class UnoRoom extends Room {
@@ -108,8 +118,9 @@ export class UnoRoom extends Room {
     pickup : any = undefined;
     block : any = undefined;
     toBe : number = 0;
-    cardsToPick : number = 0;
-    stackPlayed : number = 0;
+    time: any = new Date();
+    unoCalled : boolean = false;
+    cardSent : boolean = false;
 
     onCreate (options: any) {
         this.setState(new State(this));
@@ -144,8 +155,8 @@ export class UnoRoom extends Room {
                     this.pickup = undefined;
                     this.block = undefined;
                     this.toBe = 0;
-                    this.cardsToPick = 0;
-                    this.stackPlayed = 0;
+                    this.state.cardsToPick = 0;
+                    this.state.stackPlayed = 0;
                     this.state.currentCardColour =  getColour();
                     this.state.currentCardNumber =  getNumber(false);
                     for (let player in this.players) {
@@ -175,7 +186,7 @@ export class UnoRoom extends Room {
                 } else {
                     // console.log("Non host tried to transfer");
                 }
-            } else if (message.playTurn != undefined && this.started && message.playTurn.colour != undefined && message.playTurn.number != undefined && !this.state.waitingForChange && !this.state.waitingForSwap) {
+            } else if (message.playTurn != undefined && this.started && message.playTurn.colour != undefined && message.playTurn.number != undefined && !this.state.waitingForChange && !this.state.waitingForSwap && ((new Date().getTime() - this.time.getTime()) >= 500)) {
                 if ((this.state.jumpIn && message.playTurn.number == this.state.currentCardNumber && message.playTurn.colour == this.state.currentCardColour || client.id == this.state.turn) && this.started) {
                     this.state.turn = client.id;
                     if ((message.playTurn.colour == "r" || message.playTurn.colour == "g" || message.playTurn.colour == "b" || message.playTurn.colour == "y") && message.playTurn.number > -1 && message.playTurn.number < 15) {
@@ -189,15 +200,28 @@ export class UnoRoom extends Room {
                             }
                         }
                         if (valid) {
-                            if ((this.cardsToPick == 0 && (message.playTurn.number > 12 || this.state.currentCardColour == message.playTurn.colour || this.state.currentCardNumber == message.playTurn.number)) || (this.cardsToPick > 0 && message.playTurn.number == this.stackPlayed)) {
+                            if ((this.state.cardsToPick == 0 && (message.playTurn.number > 12 || this.state.currentCardColour == message.playTurn.colour || this.state.currentCardNumber == message.playTurn.number)) || (this.state.cardsToPick > 0 && message.playTurn.number == this.state.stackPlayed)) {
+                                if (this.state.contestable) {
+                                    this.state.calledUno = "";
+                                    this.state.contestable = false;
+                                }
+                                if (this.state.players[client.id].cards > 2) {
+                                    this.unoCalled = false;
+                                }
+                                this.cardSent = false;
                                 this.state.players[client.id].cards--;
                                 this.playerCards[client.id].splice(index, 1);
+                                if (this.state.players[client.id].cards == 1 && !this.unoCalled) {
+                                    this.state.calledUno = client.id;
+                                    this.state.contestable = true;
+                                }
                                 if (message.playTurn.number < 13) {
                                     this.state.currentCardColour =  message.playTurn.colour;
                                     this.state.currentCardNumber =  message.playTurn.number;
                                 } else {
                                     this.toBe = message.playTurn.number;
                                 }
+                                this.time = new Date();
                                 // console.log(this.state.turn, "played", message.playTurn.colour, message.playTurn.number);
                                 if (this.state.players[client.id].cards == 0) {
                                     this.started = false;
@@ -239,8 +263,8 @@ export class UnoRoom extends Room {
                                         case 12:
                                             // console.log("+2");
                                             if (this.state.stacking) {
-                                                this.cardsToPick += 2;
-                                                this.stackPlayed = 12;
+                                                this.state.cardsToPick += 2;
+                                                this.state.stackPlayed = 12;
                                                 this.nextTurn(0, 0);
                                             } else {
                                                 this.nextTurn(1, 2);
@@ -256,8 +280,8 @@ export class UnoRoom extends Room {
                                             // console.log("+4");
                                             this.state.waitingForChange = true;
                                             if (this.state.stacking) {
-                                                this.cardsToPick += 4;
-                                                this.stackPlayed = 14;
+                                                this.state.cardsToPick += 4;
+                                                this.state.stackPlayed = 14;
                                             } else {
                                                 this.block = 1;
                                                 this.pickup = 4;
@@ -268,18 +292,18 @@ export class UnoRoom extends Room {
                                             break;
                                     }
                                 }
-                            } else {
+                            } // else {
                                 // console.log("Player cannot play that card");
-                            }
-                        } else {
+                            // }
+                        } // else {
                             // console.log("Player does not have the card they tried to play");
-                        }
-                    } else {
+                        // }
+                    } // else {
                         // console.log("Invalid turn played");
-                    }
-                } else {
+                    // }
+                } // else {
                     // console.log("Player tried to play when it wasn't their turn");
-                }
+                // }
             } else if (message.pickColour != undefined && this.started && this.state.waitingForChange && this.state.turn == client.id && !this.state.waitingForSwap) {
                 if (message.pickColour == "r" || message.pickColour == "g" || message.pickColour == "b" || message.pickColour == "y") {
                     this.state.waitingForChange = false;
@@ -294,12 +318,12 @@ export class UnoRoom extends Room {
                 }
             } else if (message.pickup != undefined && message.pickup == true && !this.state.waitingForChange && this.started && !this.state.waitingForSwap) {
                 if (this.state.turn == client.id) {
-                    if (this.cardsToPick != 0 && this.state.stacking) {
-                        // console.log(client.id, "picked up ", this.cardsToPick);
-                        for (let i = 0; i < this.cardsToPick; i++) {
+                    if (this.state.cardsToPick != 0 && this.state.stacking) {
+                        // console.log(client.id, "picked up ", this.state.cardsToPick);
+                        for (let i = 0; i < this.state.cardsToPick; i++) {
                             this.addCard(client.id);
                         }
-                        this.cardsToPick = 0;
+                        this.state.cardsToPick = 0;
                     } else {
                         // console.log(client.id, "picked up");
                         this.addCard(client.id);
@@ -328,8 +352,23 @@ export class UnoRoom extends Room {
             } else if (message.jumpIn != undefined && (message.jumpIn == true || message.jumpIn == false) && client.id == this.state.host && !this.started) {
                 this.state.jumpIn = message.jumpIn;
                 // console.log(1);
+            } else if (message.uno != undefined && (message.uno == true || message.uno == false) && client.id == this.state.turn && this.started && this.state.players[client.id].cards == 2) {
+                this.unoCalled = true;
+                this.state.players[client.id].uno = true;
+                // console.log(1);
+            } else if (message.contest != undefined && (message.contest == true || message.contest == false) && this.started && this.state.contestable) {
+                this.state.contestable = false;
+                this.addCard(this.state.calledUno);
+                this.state.calledUno = "";
+                this.unoCalled = false;
+                console.log(1);
+            } else if (message.playingCard != undefined && client.id == this.state.turn && !this.cardSent) {
+                this.cardSent = true;
+                this.broadcast({ cardPlayed: client.id });
             } else {
                 // console.log(message);
+                // console.log(new Date().getTime() - this.time.getTime());
+                // this.time = new Date();
             }
         }
     }
@@ -386,8 +425,13 @@ export class UnoRoom extends Room {
     }
 
     addCard(player: string) {
-        this.state.players[player].cards++;
+        if (this.state.players[player].uno) {
+            this.unoCalled = false;
+            this.state.players[player].uno = false;
+        }
         this.playerCards[player].push({colour: getColour(), number: getNumber(true)});
+        this.state.players[player].cards++;
+        this.send(this.players[player].client, { cards: this.playerCards[player]});
         // this.playerCards[player].push({colour: getColour(), number: 7});
         // console.log("cardPicked", player);
     }

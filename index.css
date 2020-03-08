@@ -378,6 +378,16 @@ body {
 	display: none;
 }
 
+#unoB {
+	width: 25%;
+    display: none;
+}
+
+#contestB {
+	width: 25%;
+    display: none;
+}
+
 .tooltip {
   position: relative;
   display: inline-block;

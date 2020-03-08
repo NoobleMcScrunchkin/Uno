@@ -2,6 +2,9 @@ var client = new Colyseus.Client('ws://' + location.host + ':3214');
 var room = undefined;
 var myCards = [];
 var winner = undefined;
+var cardEl = [];
+var pCards = {};
+var currentCard = "";
 
 document.addEventListener("keydown", (e) => {if (e.keyCode === 13) {e.preventDefault(); join();}})
 
@@ -78,6 +81,24 @@ function runGame(roomP) {
             winner = undefined;
         } else if (message.winner != undefined) {
             winner = message.winner;
+        } else if (message.cardPlayed != undefined && message.cardPlayed != room.sessionId) {
+            let style = window.getComputedStyle(document.getElementById("currentCard"));
+            let marginTop = style.getPropertyValue('margin-top');
+            let marginLeft = style.getPropertyValue('margin-left');
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.left = pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].getBoundingClientRect().left + "px";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.top = pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].getBoundingClientRect().top + "px";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.width = pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].width + "px";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.height = pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].height + "px";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].setAttribute("onclick", "");
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.position = "fixed";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.zIndex = 10;
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.transition = "all 300ms";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.padding = "0px";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.left = (document.getElementById("currentCard").getBoundingClientRect().left) + "px";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.top = (document.getElementById("currentCard").getBoundingClientRect().top) + "px";
+            let sf = document.getElementById("currentCard").width / pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].width;
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.transformOrigin = "0 0";
+            pCards[message.cardPlayed][pCards[message.cardPlayed].length - 1].style.transform = "scale(" + sf + ")";
         }
     });
 
@@ -135,6 +156,7 @@ function sort(cardsUnsort) {
 function draw() {
     $("#swap").empty();
     $("#players").empty();
+    cardEl = [];
     dom = document.createElement("span");
     dom.textContent = "Room ID: ";
     document.getElementById("players").appendChild(dom);
@@ -207,6 +229,20 @@ function draw() {
     l3.className = "checkmark";
     l1.appendChild(l3)
 
+    if (room.state.players[room.sessionId].cards == 2 && room.state.turn == room.sessionId && !room.state.waitingForSwap && !room.state.waitingForChange) {
+        document.getElementById("unoB").style.display = "inline-block";
+    } else {
+        document.getElementById("unoB").style.display = "none";
+    }
+
+    if (room.state.contestable && room.sessionId != room.state.calledUno) {
+        document.getElementById("contestB").style.display = "inline-block";
+    } else {
+        document.getElementById("contestB").style.display = "none";
+    }
+
+    pCards = {};
+
     for (let player in room.state.players) {
         if (player != room.sessionId) {
             dom = document.createElement("span");
@@ -233,6 +269,9 @@ function draw() {
         if (room.state.host == player) {
             dom.textContent += " (Host)"
         }
+        if (room.state.players[player].uno) {
+            dom.textContent += " (Uno)"
+        }
         if (winner != undefined && room.state.turn == "" && winner == player) {
             dom.textContent += " (Winner)"
         }
@@ -249,27 +288,32 @@ function draw() {
         div = document.createElement("div")
         div.className = "cards";
         document.getElementById("players").appendChild(div);
+        pCards[player] = [];
         for (let i = 0; i < room.state.players[player].cards; i++){
             dom = document.createElement("img");
             dom.src = "cards/card.png"
             dom.className = "card"
             div.appendChild(dom);
+            pCards[player].push(dom);
         }
     }
     if (room.state.turn != "") {
         document.getElementById("startB").style.display = "none";
         document.getElementById("currentCard").src = "cards/" + room.state.currentCardColour + room.state.currentCardNumber + ".png";
-        $("#gameArea .cards").empty();
-        for (let i = 0; i < myCards.length; i++) {
-            dom = document.createElement("img");
-            if (myCards[i].number < 13) {
-                dom.src = "cards/" + myCards[i].colour + myCards[i].number + ".png";
-            } else {
-                dom.src = "cards/" + myCards[i].number + ".png";
+        if (!room.state.waitingForSwap && !room.state.waitingForChange) {
+            $("#gameArea .cards").empty();
+            for (let i = 0; i < myCards.length; i++) {
+                dom = document.createElement("img");
+                if (myCards[i].number < 13) {
+                    dom.src = "cards/" + myCards[i].colour + myCards[i].number + ".png";
+                } else {
+                    dom.src = "cards/" + myCards[i].number + ".png";
+                }
+                dom.setAttribute("onclick","playCard(" + i + ", '" + myCards[i].colour + "', " + myCards[i].number + ")");
+                dom.className = "card";
+                document.getElementById("gameArea").getElementsByClassName("cards")[0].appendChild(dom);
+                cardEl.push(dom);
             }
-            dom.setAttribute("onclick","playCard('" + myCards[i].colour + "', " + myCards[i].number + ")");
-            dom.className = "card";
-            document.getElementById("gameArea").getElementsByClassName("cards")[0].appendChild(dom);
         }
     } else {
         if (room.state.host == room.sessionId) {
@@ -313,8 +357,32 @@ function pickup() {
     room.send({pickup: true});
 }
 
-function playCard(colour, number) {
-    room.send({playTurn: {colour: colour, number: number}});
+function playCard(index, colour, number) {
+    if (room.state.jumpIn && number == room.state.currentCardNumber && colour == room.state.currentCardColour || room.sessionId == room.state.turn) {
+        if ((colour == "r" || colour == "g" || colour == "b" || colour == "y") && number > -1 && number < 15) {
+            if ((room.state.cardsToPick == 0 && (number > 12 || room.state.currentCardColour == colour || room.state.currentCardNumber == number)) || (room.state.cardsToPick > 0 && number == this.state.stackPlayed)) {
+                room.send({ playingCard: true });
+                let style = window.getComputedStyle(document.getElementById("currentCard"));
+                let marginTop = style.getPropertyValue('margin-top');
+                let marginLeft = style.getPropertyValue('margin-left');
+                cardEl[index].style.left = cardEl[index].getBoundingClientRect().left + "px";
+                cardEl[index].style.top = cardEl[index].getBoundingClientRect().top + "px";
+                cardEl[index].style.width = cardEl[index].width + "px";
+                cardEl[index].style.height = cardEl[index].height + "px";
+                cardEl[index].setAttribute("onclick", "");
+                cardEl[index].style.position = "fixed";
+                cardEl[index].style.zIndex = 10;
+                cardEl[index].style.transition = "all 300ms";
+                cardEl[index].style.padding = "0px";
+                cardEl[index].style.left = (document.getElementById("currentCard").getBoundingClientRect().left) + "px";
+                cardEl[index].style.top = (document.getElementById("currentCard").getBoundingClientRect().top) + "px";
+                let sf = document.getElementById("currentCard").width / cardEl[index].width;
+                cardEl[index].style.transformOrigin = "0 0";
+                cardEl[index].style.transform = "scale(" + sf + ")";
+                setTimeout(() => {  room.send({playTurn: {colour: colour, number: number}}); }, 300);
+            }
+        }
+    }
 }
 
 function pickColour(colour) {
@@ -323,4 +391,12 @@ function pickColour(colour) {
 
 function pickSwap(player) {
     room.send({pickSwap : player});
+}
+
+function uno() {
+    room.send({uno: true});
+}
+
+function contest() {
+    room.send({contest: true});
 }
