@@ -270,12 +270,12 @@
   }
 }
 
-#players {
-    width: 20%;
+#toggles {
+	padding-right: 8px;
     position: absolute;
     top: 0;
     left: 0;
-    height: 100%;
+    z-index: 100;
     background: rgba(255, 255, 255, 0.1);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -283,7 +283,7 @@
 	padding-left: 8px;
 }
 
-#players span {
+#toggles span {
     position: relative;
 }
 
@@ -343,21 +343,43 @@
     overflow-x: scroll;
 }
 
+.pCards {
+    height: 80%;
+    bottom: 0px;
+}
+
 #gameArea .card {
-    padding: 4px;
-    position: relative;
-    height: 90%;
+    padding: 0px;
+    position: absolute;
+    height: 80%;
     width: auto;
     bottom: 0;
 }
 
+.cards .card {
+    padding: 4px !important;
+    position: relative !important;
+    height: 90% !important;
+    width: auto !important;
+    bottom: 0 !important;
+}
+
+#nameInput {
+    background: none;
+    border: none;
+    outline: none;
+    color: white;
+    font-family: "Arial Black", "Arial Bold", Gadget, sans-serif;
+}
+
 .bigCard {
-	margin-top: 5%;
+	/* margin-top: 25%; */
 	width: 20%;
 	height: auto;
 }
 
 body {
+    /* transition: all 300ms; */
     user-select: none;
     -webkit-user-select: none;
     -khtml-user-select: none;
@@ -391,11 +413,13 @@ body {
 .tooltip {
   position: relative;
   display: inline-block;
+  width: 100%;
 }
 
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 120px;
+  width: 100%;
+  left: 0;
   background-color: #555;
   color: #fff;
   text-align: center;
