@@ -107,6 +107,8 @@ export class State extends Schema {
     cardsToPick = 0;
     @type("number")
     stackPlayed = 0;
+    @type("string")
+    name = "";
 }
 
 export class UnoRoom extends Room {
@@ -130,13 +132,15 @@ export class UnoRoom extends Room {
     onJoin (client: Client, options: any) {
         if (!this.started) {
             // console.log("Player joined: " + client.id);
-            if (this.state.host == "") {
-                this.state.host = client.id;
-            }
             if (options.name != undefined) {
                 this.players[client.id] = {name: options.name, client: client};
             } else {
                 this.players[client.id] = {name: "Player", client: client};
+            }
+            if (this.state.host == "") {
+                this.state.host = client.id;
+                this.state.name = this.players[client.id].name + "'s Room";
+                this.setMetadata({ name: this.state.name });
             }
             this.state.players[client.id] = new Players()
             this.state.players[client.id].name = this.players[client.id].name;
@@ -281,12 +285,14 @@ export class UnoRoom extends Room {
                                             break;
                                         case 13:
                                             // console.log("changeColour");
+                                            this.state.currentCardNumber = 13;
                                             this.state.waitingForChange = true;
                                             this.block = 0;
                                             this.pickup = 0;
                                             break;
                                         case 14:
                                             // console.log("+4");
+                                            this.state.currentCardNumber = 14;
                                             this.state.waitingForChange = true;
                                             if (this.state.stacking) {
                                                 this.state.cardsToPick += 4;
@@ -370,10 +376,13 @@ export class UnoRoom extends Room {
                 this.addCard(this.state.calledUno);
                 this.state.calledUno = "";
                 this.unoCalled = false;
-                console.log(1);
+                // console.log(1);
             } else if (message.playingCard != undefined && client.id == this.state.turn && !this.cardSent) {
                 this.cardSent = true;
                 this.broadcast({ cardPlayed: client.id });
+            } else if (message.name != undefined && client.id == this.state.host) {
+                this.state.name = message.name;
+                this.setMetadata({ name: this.state.name });
             } else {
                 // console.log(message);
                 // console.log(new Date().getTime() - this.time.getTime());

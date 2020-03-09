@@ -25,23 +25,40 @@
                 <button type="button" onclick="join()" class="button buttonBlue">Enter Game
                     <div class="ripples buttonRipples"><span class="ripplesCircle"></span></div>
                 </button>
+                <div class="group" style="margin-bottom:0; margin-top: 8px;">
+                    Rooms
+                    <div id="rooms">
+                    </div>
+                </div>
             </form>
         </div>
         <div id="game" hidden>
-            <div id="players"></div>
-            <div id="gameArea">
-                <form id="startB" class="entry" style="margin: 0; padding: 0;">
-                    <div class="group" style="margin: 0; padding: 0;">
-                        <button type="button" onclick="start()" class="button buttonBlue" style="margin: 0;">
-                            Start
-                            <div class="ripples buttonRipples">
-                                <span class="ripplesCircle"></span>
-                            </div>
-                        </button>
-                    </div>
-                </form><br>
-                <img id="currentCard" class="bigCard" src="cards/card.png">
-                <img id="pickupCard" class="bigCard" onclick="pickup()" src="cards/card.png">
+            <div id="toggles"></div>
+
+            <div id="gameArea" style="left: 0; width: 100%">
+                <div id="player1" style="position: fixed; width: 25%; height: 15%; left: 37.5%; top: 0%;  background-color: none;"><div class="pCards"></div></div>
+                <div id="player2" style="position: fixed; width: 25%; height: 15%; left: 0%;    top: 20%; background-color: none;"><div class="pCards"></div></div>
+                <div id="player3" style="position: fixed; width: 25%; height: 15%; left: 75%;   top: 20%; background-color: none;"><div class="pCards"></div></div>
+                <div id="player4" style="position: fixed; width: 25%; height: 15%; left: 0%;    top: 40%; background-color: none;"><div class="pCards"></div></div>
+                <div id="player5" style="position: fixed; width: 25%; height: 15%; left: 75%;   top: 40%; background-color: none;"><div class="pCards"></div></div>
+                <div id="player6" style="position: fixed; width: 25%; height: 15%; left: 0%;    top: 60%; background-color: none;"><div class="pCards"></div></div>
+                <div id="player7" style="position: fixed; width: 25%; height: 15%; left: 75%;   top: 60%; background-color: none;"><div class="pCards"></div></div>
+                <div id="bigCards" style="text-align: center; margin-top: 15%; display: inline-block">
+                    <form id="startB" class="entry" style="margin: 0; padding: 0; width: 50%">
+                        <div class="group" style="margin: 0; padding: 0; width: 100%">
+                            <button type="button" onclick="start()" class="button buttonBlue" style="margin: 0; width: 100%">
+                                Start
+                                <div class="ripples buttonRipples">
+                                    <span class="ripplesCircle"></span>
+                                </div>
+                            </button>
+                        </div>
+                    </form><br>
+                    <img id="currentCard" class="bigCard" src="cards/card.png">
+                    <img id="pickupCard" class="bigCard" onclick="pickup()" src="cards/card.png">
+                </div>
+                <br>
+                <h1 id="turn">It is your turn</h1>
                 <br>
                 <div id="colours" style="position: relative; width: 20%; height: 20%; border: white 8px solid; border-radius: 8px; display: none;">
                     <div onclick="pickColour('r')" style="background: rgb(234,50,60); width: 50%; height: 50%; float: left;"></div>
