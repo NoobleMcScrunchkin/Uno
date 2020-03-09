@@ -155,21 +155,12 @@ export class UnoRoom extends Room {
             if (message.start != undefined && !this.started && client.id == this.state.host) {
                 if (Object.keys(this.players).length > 1) {
                     this.started = true;
-<<<<<<< HEAD
-                    this.stackPlayed = 0;
-=======
->>>>>>> bd9e9d0024c7839b8923ae528e197ff188cc7286
                     this.clockwise = true;
                     this.pickup = undefined;
                     this.block = undefined;
                     this.toBe = 0;
-<<<<<<< HEAD
-                    this.stackPlayed = 0;
-                    this.cardsToPick = 0;
-=======
                     this.state.cardsToPick = 0;
                     this.state.stackPlayed = 0;
->>>>>>> bd9e9d0024c7839b8923ae528e197ff188cc7286
                     this.state.currentCardColour =  getColour();
                     this.state.currentCardNumber =  getNumber(false);
                     for (let player in this.players) {

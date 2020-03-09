@@ -341,46 +341,6 @@ function draw() {
             tip.className = "tooltiptext";
             tip.textContent = "Click to swap";
             dom.appendChild(tip);
-        }
-        document.getElementById("swap").appendChild(document.createElement("br"));
-        div = document.createElement("div");
-        div.className = "tooltip"
-        document.getElementById("players").appendChild(div);
-        dom = document.createElement("span");
-        if (room.state.turn == player) {
-            dom.style.color = "red";
-        }
-        dom.textContent = room.state.players[player].name;
-        if (room.state.host == player) {
-            dom.textContent += " (Host)"
-        }
-        if (room.state.players[player].uno) {
-            dom.textContent += " (Uno)"
-        }
-        if (winner != undefined && room.state.turn == "" && winner == player) {
-            dom.textContent += " (Winner)"
-        }
-        div.appendChild(dom);
-        if (room.sessionId == room.state.host && player != room.state.host) {
-            div.setAttribute("onclick","transferHost('" + player + "')");
-            tip = document.createElement("span");
-            tip.className = "tooltiptext";
-            tip.textContent = "Click to transfer host";
-            tip.style.left = (-dom.offsetWidth) + "px";
-            div.appendChild(tip);
-        }
-        document.getElementById("players").appendChild(document.createElement("br"));
-        div = document.createElement("div")
-        div.className = "cards";
-        document.getElementById("players").appendChild(div);
-        pCards[player] = [];
-        for (let i = 0; i < room.state.players[player].cards; i++){
-            dom = document.createElement("img");
-            dom.src = "cards/card.png"
-            dom.className = "card"
-            div.appendChild(dom);
-            pCards[player].push(dom);
-=======
             document.getElementById("swap").appendChild(document.createElement("br"));
 
             div = document.createElement("div");
@@ -400,7 +360,6 @@ function draw() {
             }
 
             i++;
->>>>>>> 612f5429f6d31235dd01bc0122571231d1d0df93
         }
     }
     if (room.state.turn != "") {
