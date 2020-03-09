@@ -297,6 +297,12 @@
     white-space: nowrap;
 }
 
+table {
+    border-spacing: 0px;
+    text-align: center;
+    color: #212121;
+}
+
 #gameArea {
     position: absolute;
     width: 80%;
@@ -365,6 +371,15 @@
 }
 
 #nameInput {
+    background: none;
+    border: none;
+    outline: none;
+    color: white;
+    font-family: "Arial Black", "Arial Bold", Gadget, sans-serif;
+}
+
+#passInput {
+    display: inline-block;
     background: none;
     border: none;
     outline: none;

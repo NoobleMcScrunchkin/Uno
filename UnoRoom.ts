@@ -109,6 +109,10 @@ export class State extends Schema {
     stackPlayed = 0;
     @type("string")
     name = "";
+    @type("boolean")
+    private = false;
+    @type("string")
+    password = "Password";
 }
 
 export class UnoRoom extends Room {
@@ -126,25 +130,30 @@ export class UnoRoom extends Room {
 
     onCreate (options: any) {
         this.setState(new State(this));
+        this.setMetadata({ private: this.state.private });
         // console.log("UnoRoom created: " + this.roomId);
     }
 
     onJoin (client: Client, options: any) {
         if (!this.started) {
             // console.log("Player joined: " + client.id);
-            if (options.name != undefined) {
-                this.players[client.id] = {name: options.name, client: client};
+            if ((this.state.private && options.password == this.state.password) || !this.state.private) {
+                if (options.name != undefined) {
+                    this.players[client.id] = {name: options.name, client: client};
+                } else {
+                    this.players[client.id] = {name: "Player", client: client};
+                }
+                if (this.state.host == "") {
+                    this.state.host = client.id;
+                    this.state.name = this.players[client.id].name + "'s Room";
+                    this.setMetadata({ name: this.state.name });
+                }
+                this.state.players[client.id] = new Players()
+                this.state.players[client.id].name = this.players[client.id].name;
+                this.state.players[client.id].cards = 7;
             } else {
-                this.players[client.id] = {name: "Player", client: client};
+                client.close();
             }
-            if (this.state.host == "") {
-                this.state.host = client.id;
-                this.state.name = this.players[client.id].name + "'s Room";
-                this.setMetadata({ name: this.state.name });
-            }
-            this.state.players[client.id] = new Players()
-            this.state.players[client.id].name = this.players[client.id].name;
-            this.state.players[client.id].cards = 7;
         } else {
             client.close();
         }
@@ -374,6 +383,11 @@ export class UnoRoom extends Room {
             } else if (message.name != undefined && client.id == this.state.host) {
                 this.state.name = message.name;
                 this.setMetadata({ name: this.state.name });
+            } else if (message.private != undefined && client.id == this.state.host) {
+                this.state.private = message.private;
+                this.setMetadata({ private: this.state.private });
+            } else if (message.password != undefined && client.id == this.state.host) {
+                this.state.password = message.password;
             } else {
                 // console.log(message);
                 // console.log(new Date().getTime() - this.time.getTime());

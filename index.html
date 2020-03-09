@@ -25,10 +25,19 @@
                 <button type="button" onclick="join()" class="button buttonBlue">Enter Game
                     <div class="ripples buttonRipples"><span class="ripplesCircle"></span></div>
                 </button>
-                <div class="group" style="margin-bottom:0; margin-top: 8px;">
-                    Rooms
-                    <div id="rooms">
-                    </div>
+                <div id="tablegroup" class="group" style="margin-bottom:0; margin-top: 20px">
+                    <button type="button" class="button buttonBlue" onclick="refreshList()">Refresh
+                        <div class="ripples buttonRipples"><span class="ripplesCircle"></span></div>
+                    </button>
+                    <table style="width: 100%; table-layout: fixed; word-break: break-word;">
+                        <tbody id="listBod">
+                            <tr>
+                                <th>Room Name</th>
+                                <th style="width: 25%;">Players</th>
+                                <th>Join</th>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </form>
         </div>

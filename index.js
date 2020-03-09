@@ -5,6 +5,7 @@ var winner = undefined;
 var cardEl = [];
 var pCards = {};
 var currentCard = "";
+var found = false;
 
 rooms = undefined;
 client.getAvailableRooms().then(function(value) { rooms = value } )
@@ -44,7 +45,7 @@ window.onload = function() {
         connectParticles: true,
         speed: 0.5
     });
-    let found = false;
+
     if (location.search.replace("?", "") != "") {
         for (let room in rooms) {
             if (rooms[room].roomId == location.search.replace("?", "")) {
@@ -54,37 +55,76 @@ window.onload = function() {
         if (found) {
             document.getElementById("roomInp").value = location.search.replace("?", "");
             document.getElementById("roomInp").parentElement.hidden = true;
-            document.getElementById("rooms").parentElement.hidden = true;
+            document.getElementById("tablegroup").hidden = true;
         }
     }
 
-    if (!found) {
+    refreshList();
+}
+
+function refreshList() {
+    $(".listRow").remove()
+    client.getAvailableRooms().then(function(value) {
+        rooms = value
         for (let i = 0; i < rooms.length; i++) {
-            document.getElementById("rooms").innerHTML += rooms[i].metadata.name + "<br>";
+            let dom = document.createElement("tr");
+            dom.className = "listRow";
+            document.getElementById("listBod").appendChild(dom);
+            let td = document.createElement("td");
+            td.textContent = rooms[i].metadata.name;
+            dom.appendChild(td);
+            td = document.createElement("td");
+            td.textContent = rooms[i].clients + "/" + rooms[i].maxClients;
+            dom.appendChild(td);
+            td = document.createElement("td");
+            td.innerHTML = '<button type="button" style="margin: auto;" class="button buttonBlue" onclick="joinRoom(document.getElementById(`nameInp`).value, `' + rooms[i].roomId + '`)">Join<div class="ripples buttonRipples"><span class="ripplesCircle"></span></div></button>';
+            dom.appendChild(td);
             // console.log(1);
         }
-    }
+        if (rooms.length == 0) {
+            let dom = document.createElement("tr");
+            dom.className = "listRow";
+            document.getElementById("listBod").appendChild(dom);
+            let td = document.createElement("td");
+            td.colSpan = 3;
+            td.textContent = "No Rooms";
+            dom.appendChild(td);
+        }
+    });
 }
 
 function join() {
     if (room == undefined) {
         let name = document.getElementById("nameInp").value;
-        if (!name.replace(/\s/g, '').length) {
-            name = "Player";
-        }
         let id = document.getElementById("roomInp").value;
         joinRoom(name, id);
     }
 }
 
 function joinRoom(name, id) {
+    refreshList();
+    if (!name.replace(/\s/g, '').length) {
+        name = "Player";
+    }
     if (room == undefined) {
         if (!id.replace(/\s/g, '').length) {
             client.create("unoRoom", { name: name }).then(room => {runGame(room)}).catch(e => {
                 console.error("join error", e);
             });
         } else {
-            client.joinById(id, { name: name }).then(room => {runGame(room)}).catch(e => {
+            let pass = "";
+            let passReq = false;
+            for (let i = 0; i < rooms.length; i++) {
+                console.log(1);
+                console.log(rooms[i])
+                if (rooms[i].metadata.private && rooms[i].roomId == id) {
+                    passReq = true;
+                }
+            }
+            if (passReq) {
+                pass = window.prompt("Enter the Room Password");
+            }
+            client.joinById(id, { name: name, password: pass }).then(room => {runGame(room)}).catch(e => {
                 console.error("join error (Game may have started)", e);
             });
         }
@@ -218,6 +258,43 @@ function draw() {
     indom.textContent = room.id;
     dom.appendChild(indom);
     document.getElementById("toggles").appendChild(document.createElement("br"));
+
+    l1 = document.createElement("label");
+    l1.className = "container";
+    l1.textContent = "Private";
+    document.getElementById("toggles").appendChild(l1);
+
+    l2 = document.createElement("input");
+    l2.type = "checkbox";
+    if (room.state.private) {
+        l1.style.marginBottom = "0px";
+        l2.checked = "checked";
+    }
+    if (room.state.host != room.sessionId || room.state.turn != "") {
+        l2.disabled = true;
+    } else {
+        l2.setAttribute("onclick", "if (this.checked) { room.send({private: true}) } else { room.send({private: false}); }");
+    }
+    l1.appendChild(l2);
+
+    l3 = document.createElement("span");
+    l3.className = "checkmark";
+    l1.appendChild(l3)
+
+    if (room.state.private) {
+        let passDom = document.createElement("span");
+        passDom.textContent = "Password: "
+        document.getElementById("toggles").appendChild(passDom);
+        let passInp = document.createElement("input");
+        passInp.id = "passInput";
+        if (room.state.host != room.sessionId) {
+            passInp.disabled = true;
+        }
+        passInp.value = room.state.password;
+        passInp.onblur = function() {room.send({ password: document.getElementById("passInput").value })};
+        passDom.appendChild(passInp);
+        document.getElementById("toggles").appendChild(document.createElement("br"));
+    }
 
     l1 = document.createElement("label");
     l1.className = "container";
